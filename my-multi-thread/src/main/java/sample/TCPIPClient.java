@@ -15,27 +15,39 @@ public class TCPIPClient extends JFrame {
     private BufferedReader serverReader;
     private CardLayout cardLayout;
     private JPanel mainPanel;
+    private Image backgroundImage;
 
     public TCPIPClient() {
         setTitle("TCP/IP Client");
         setSize(400, 300);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        loadBackgroundImage();
         initComponents();
         connectToServer();
     }
 
+    private void loadBackgroundImage() {
+        // ここで背景画像をロードします
+        // 画像ファイルのパスを指定してください
+        try {
+            backgroundImage = new ImageIcon("path/to/your/background.jpg").getImage();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     private void initComponents() {
         cardLayout = new CardLayout();
-        mainPanel = new JPanel(cardLayout);
-        
+        mainPanel = new BackgroundPanel();
+        mainPanel.setLayout(cardLayout);
+
         initLoginPanel();
         initGamePanel();
-        
+
         getContentPane().add(mainPanel);
     }
 
     private void initLoginPanel() {
-        JPanel loginPanel = new JPanel(new GridLayout(2, 2));
         JLabel idLabel = new JLabel("Your ID");
         idField = new JTextField(30);
         JButton loginButton = new JButton("LOGIN");
@@ -50,6 +62,8 @@ public class TCPIPClient extends JFrame {
             }
         });
 
+        JPanel loginPanel = new JPanel(new GridLayout(2, 2));
+        loginPanel.setOpaque(false); // パネルを透明にします
         loginPanel.add(idLabel);
         loginPanel.add(idField);
         loginPanel.add(new JLabel()); // Empty label for spacing
@@ -60,11 +74,12 @@ public class TCPIPClient extends JFrame {
 
     private void initGamePanel() {
         JPanel gamePanel = new JPanel(new BorderLayout());
+        gamePanel.setOpaque(false); // パネルを透明にします
         betField = new JTextField(10);
         JLabel betLabel = new JLabel("BET");
         JButton choButton = new JButton("丁");
         JButton hanButton = new JButton("半");
-        
+
         choButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -80,10 +95,12 @@ public class TCPIPClient extends JFrame {
         });
 
         JPanel inputPanel = new JPanel();
+        inputPanel.setOpaque(false); // パネルを透明にします
         inputPanel.add(betLabel);
         inputPanel.add(betField);
 
         JPanel buttonPanel = new JPanel(new GridLayout(1, 2));
+        buttonPanel.setOpaque(false); // パネルを透明にします
         buttonPanel.add(choButton);
         buttonPanel.add(hanButton);
 
@@ -112,7 +129,7 @@ public class TCPIPClient extends JFrame {
 
             InputStream input = socket.getInputStream();
             serverReader = new BufferedReader(new InputStreamReader(input));
-            
+
             // Thread to listen for server messages
             new Thread(() -> {
                 try {
@@ -147,5 +164,15 @@ public class TCPIPClient extends JFrame {
                 new TCPIPClient().setVisible(true);
             }
         });
+    }
+
+    class BackgroundPanel extends JPanel {
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            if (backgroundImage != null) {
+                g.drawImage(backgroundImage, 0, 0, getWidth(), getHeight(), this);
+            }
+        }
     }
 }
