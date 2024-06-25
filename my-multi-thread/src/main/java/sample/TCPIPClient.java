@@ -1,10 +1,12 @@
 package sample;
 
-import java.io.*;
-import java.net.*;
+import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import javax.swing.*;
+import java.io.*;
+import java.net.*;
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 
 public class TCPIPClient extends JFrame {
     private JTextField idField;
@@ -15,42 +17,30 @@ public class TCPIPClient extends JFrame {
     private BufferedReader serverReader;
     private CardLayout cardLayout;
     private JPanel mainPanel;
-    private Image backgroundImage;
 
     public TCPIPClient() {
         setTitle("TCP/IP Client");
-        setSize(400, 300);
+        setSize(800, 450);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        loadBackgroundImage();
         initComponents();
         connectToServer();
     }
 
-    private void loadBackgroundImage() {
-        // ここで背景画像をロードします
-        // 画像ファイルのパスを指定してください
-        try {
-            backgroundImage = new ImageIcon("path/to/your/background.jpg").getImage();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
     private void initComponents() {
         cardLayout = new CardLayout();
-        mainPanel = new BackgroundPanel();
-        mainPanel.setLayout(cardLayout);
-
+        mainPanel = new JPanel(cardLayout);
+        
         initLoginPanel();
         initGamePanel();
-
+        
         getContentPane().add(mainPanel);
     }
 
     private void initLoginPanel() {
         JLabel idLabel = new JLabel("Your ID");
         idField = new JTextField(30);
-        JButton loginButton = new JButton("LOGIN");
+        idField.setBounds(340, 280, 200, 50);
+        JButton loginButton = createTransparentButton("", 320, 360, 160, 30);
 
         loginButton.addActionListener(new ActionListener() {
             @Override
@@ -62,8 +52,7 @@ public class TCPIPClient extends JFrame {
             }
         });
 
-        JPanel loginPanel = new JPanel(new GridLayout(2, 2));
-        loginPanel.setOpaque(false); // パネルを透明にします
+        BackgroundPanel loginPanel = new BackgroundPanel("src/main/java/sample/images/login.png");
         loginPanel.add(idLabel);
         loginPanel.add(idField);
         loginPanel.add(new JLabel()); // Empty label for spacing
@@ -73,13 +62,19 @@ public class TCPIPClient extends JFrame {
     }
 
     private void initGamePanel() {
-        JPanel gamePanel = new JPanel(new BorderLayout());
-        gamePanel.setOpaque(false); // パネルを透明にします
+        BackgroundPanel gamePanel = new BackgroundPanel("src/main/java/sample/images/game.png");
+        gamePanel.setLayout(null); // Absolute layout for positioning buttons
+
         betField = new JTextField(10);
         JLabel betLabel = new JLabel("BET");
-        JButton choButton = new JButton("丁");
-        JButton hanButton = new JButton("半");
 
+        betLabel.setBounds(50, 10, 50, 30);
+        betField.setBounds(110, 10, 100, 30);
+
+        gamePanel.add(betLabel);
+        gamePanel.add(betField);
+
+        JButton choButton = createTransparentButton("", 50, 50, 100, 50);
         choButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -87,6 +82,7 @@ public class TCPIPClient extends JFrame {
             }
         });
 
+        JButton hanButton = createTransparentButton("", 200, 50, 100, 50);
         hanButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -94,26 +90,28 @@ public class TCPIPClient extends JFrame {
             }
         });
 
-        JPanel inputPanel = new JPanel();
-        inputPanel.setOpaque(false); // パネルを透明にします
-        inputPanel.add(betLabel);
-        inputPanel.add(betField);
-
-        JPanel buttonPanel = new JPanel(new GridLayout(1, 2));
-        buttonPanel.setOpaque(false); // パネルを透明にします
-        buttonPanel.add(choButton);
-        buttonPanel.add(hanButton);
-
-        gamePanel.add(inputPanel, BorderLayout.NORTH);
-        gamePanel.add(buttonPanel, BorderLayout.CENTER);
+        gamePanel.add(choButton);
+        gamePanel.add(hanButton);
 
         outputArea = new JTextArea();
         outputArea.setEditable(false);
         JScrollPane scrollPane = new JScrollPane(outputArea);
+        scrollPane.setBounds(10, 120, 380, 150);
 
-        gamePanel.add(scrollPane, BorderLayout.SOUTH);
+        gamePanel.add(scrollPane);
 
         mainPanel.add(gamePanel, "gamePanel");
+    }
+
+    private JButton createTransparentButton(String text, int x, int y, int width, int height) {
+        JButton button = new JButton(text);
+        button.setBounds(x, y, width, height);
+        button.setContentAreaFilled(false);
+        button.setBorderPainted(false);
+        button.setFocusPainted(false);
+        button.setOpaque(false);
+        button.setForeground(Color.WHITE);
+        return button;
     }
 
     private void connectToServer() {
@@ -129,7 +127,7 @@ public class TCPIPClient extends JFrame {
 
             InputStream input = socket.getInputStream();
             serverReader = new BufferedReader(new InputStreamReader(input));
-
+            
             // Thread to listen for server messages
             new Thread(() -> {
                 try {
@@ -165,14 +163,25 @@ public class TCPIPClient extends JFrame {
             }
         });
     }
+}
 
-    class BackgroundPanel extends JPanel {
-        @Override
-        protected void paintComponent(Graphics g) {
-            super.paintComponent(g);
-            if (backgroundImage != null) {
-                g.drawImage(backgroundImage, 0, 0, getWidth(), getHeight(), this);
-            }
+class BackgroundPanel extends JPanel {
+    private BufferedImage image;
+
+    public BackgroundPanel(String imagePath) {
+        try {
+            image = ImageIO.read(new File(imagePath));
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+        setLayout(null); // Absolute layout to position components based on coordinates
+    }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        if (image != null) {
+            g.drawImage(image, 0, 0, getWidth(), getHeight(), this);
         }
     }
 }
