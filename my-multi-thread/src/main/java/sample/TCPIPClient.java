@@ -12,13 +12,15 @@ public class TCPIPClient extends JFrame {
     private JTextField idField;
     private JTextField betField;
     private String userId;
-    // private JTextArea outputArea;
     private PrintWriter writer;
     private BufferedReader serverReader;
     private CardLayout cardLayout;
     private JPanel mainPanel;
     private JLabel coinLabel;
-    private JLabel resultCoinLabel;
+    private JLabel resultCoinLabel1;
+    private JLabel resultCoinLabel2;
+    private JLabel resultCoinLabel3;
+    private JLabel resultCoinLabel4;
 
     public TCPIPClient() {
         setTitle("TCP/IP Client");
@@ -31,14 +33,18 @@ public class TCPIPClient extends JFrame {
     private void initComponents() {
         cardLayout = new CardLayout();
         mainPanel = new JPanel(cardLayout);
-        
+
         initLoginPanel();
         initGamePanel();
-        initResultPanel("src/main/java/sample/images/gameResult/cho_lose.png", "resultCL");
-        initResultPanel("src/main/java/sample/images/gameResult/cho_win.png", "resultCW");
-        initResultPanel("src/main/java/sample/images/gameResult/han_lose.png", "resultHL");
-        initResultPanel("src/main/java/sample/images/gameResult/han_win.png", "resultHW");
-        
+        resultCoinLabel1 = new JLabel("Your Coin");
+        initResultPanel("src/main/java/sample/images/gameResult/cho_lose.png", "resultCL", resultCoinLabel1);
+        resultCoinLabel2 = new JLabel("Your Coin");
+        initResultPanel("src/main/java/sample/images/gameResult/cho_win.png", "resultCW", resultCoinLabel2);
+        resultCoinLabel3 = new JLabel("Your Coin");
+        initResultPanel("src/main/java/sample/images/gameResult/han_lose.png", "resultHL", resultCoinLabel3);
+        resultCoinLabel4 = new JLabel("Your Coin");
+        initResultPanel("src/main/java/sample/images/gameResult/han_win.png", "resultHW", resultCoinLabel4);
+
         getContentPane().add(mainPanel);
     }
 
@@ -103,17 +109,10 @@ public class TCPIPClient extends JFrame {
         gamePanel.add(choButton);
         gamePanel.add(hanButton);
 
-        // outputArea = new JTextArea();
-        // outputArea.setEditable(false);
-        // JScrollPane scrollPane = new JScrollPane(outputArea);
-        // scrollPane.setBounds(10, 120, 380, 150);
-        // gamePanel.add(scrollPane);
-
         mainPanel.add(gamePanel, "gamePanel");
     }
 
-    private void initResultPanel(String imagePath, String panelName) {
-        resultCoinLabel = new JLabel("Your Coin");
+    private void initResultPanel(String imagePath, String panelName, JLabel resultCoinLabel) {
         resultCoinLabel.setBounds(350, 265, 200, 50);
         JButton retryButton = createTransparentButton("", 280, 325, 100, 30);
         retryButton.addActionListener(new ActionListener() {
@@ -167,7 +166,7 @@ public class TCPIPClient extends JFrame {
 
             InputStream input = socket.getInputStream();
             serverReader = new BufferedReader(new InputStreamReader(input));
-            
+
             // Thread to listen for server messages
             new Thread(() -> {
                 try {
@@ -176,44 +175,29 @@ public class TCPIPClient extends JFrame {
                         String[] parts = response.split(" ");
                         if (parts[0].equals("LOGIN")) {
                             if (parts[1].equals("FAIL")) {
-                                cardLayout.show(mainPanel, "loginPanel");
+                                SwingUtilities.invokeLater(() -> {
+                                    cardLayout.show(mainPanel, "loginPanel");
+                                });
                             } else {
-                                coinLabel.setText("Your Coin: " + parts[2]);
-                                resultCoinLabel.setText("Your Coin: " + parts[2]);
+                                SwingUtilities.invokeLater(() -> {
+                                    coinLabel.setText("Your Coin: " + parts[2]);
+                                });
                             }
                         }
 
                         if (parts[0].equals("GAME")) {
-                            if (parts[1].equals("WIN") && (Integer.parseInt(parts[2]) + Integer.parseInt(parts[3])) % 2 == 0 ) {
-                                coinLabel.setText("Your Coin: " + parts[4]);
-                                resultCoinLabel.setText("Your Coin: " + parts[4]);
-                                cardLayout.show(mainPanel, "resultCW");
-                            } else if (parts[1].equals("WIN") && (Integer.parseInt(parts[2]) + Integer.parseInt(parts[3])) % 2 == 1 ) {
-                                coinLabel.setText("Your Coin: " + parts[4]);
-                                resultCoinLabel.setText("Your Coin: " + parts[4]);
-                                cardLayout.show(mainPanel, "resultHW");
-                            } else if (parts[1].equals("LOSE") && (Integer.parseInt(parts[2])+ Integer.parseInt(parts[3])) % 2 == 0 ) {
-                                coinLabel.setText("Your Coin: " + parts[4]);
-                                resultCoinLabel.setText("Your Coin: " + parts[4]);
-                                cardLayout.show(mainPanel, "resultCL");
-                            } else if (parts[1].equals("LOSE") && (Integer.parseInt(parts[2])+ Integer.parseInt(parts[3])) % 2 == 1 ) {
-                                coinLabel.setText("Your Coin: " + parts[4]);
-                                resultCoinLabel.setText("Your Coin: " + parts[4]);
-                                cardLayout.show(mainPanel, "resultHL");
-                            }
+                            SwingUtilities.invokeLater(() -> {
+                                handleGameResponse(parts);
+                            });
                         }
-
-                        // outputArea.append("Received from server: " + response + "\n");
                     }
                 } catch (IOException e) {
-                    // ex.printStackTrace();
-                    // outputArea.append("Connection closed\n");
+                    e.printStackTrace();
                 }
             }).start();
 
         } catch (IOException ex) {
-            // ex.printStackTrace();
-            // outputArea.append("Error connecting to the server\n");
+            ex.printStackTrace();
         }
     }
 
@@ -222,16 +206,35 @@ public class TCPIPClient extends JFrame {
         if (coin != null && !coin.isEmpty()) {
             String message = "GAME " + userId + " " + coin + " " + choice;
             writer.println(message);
-            // outputArea.append("Sent to server: " + message + "\n");
+        }
+    }
+
+    private void handleGameResponse(String[] parts) {
+        if (parts.length < 5) {
+            System.err.println("Invalid response from server: " + String.join(" ", parts));
+            return;
+        }
+
+        coinLabel.setText("Your Coin: " + parts[4]);
+
+        if (parts[1].equals("WIN") && (Integer.parseInt(parts[2]) + Integer.parseInt(parts[3])) % 2 == 0) {
+            resultCoinLabel2.setText("Your Coin: " + parts[4]);
+            cardLayout.show(mainPanel, "resultCW");
+        } else if (parts[1].equals("WIN") && (Integer.parseInt(parts[2]) + Integer.parseInt(parts[3])) % 2 == 1) {
+            resultCoinLabel4.setText("Your Coin: " + parts[4]);
+            cardLayout.show(mainPanel, "resultHW");
+        } else if (parts[1].equals("LOSE") && (Integer.parseInt(parts[2]) + Integer.parseInt(parts[3])) % 2 == 0) {
+            resultCoinLabel1.setText("Your Coin: " + parts[4]);
+            cardLayout.show(mainPanel, "resultCL");
+        } else if (parts[1].equals("LOSE") && (Integer.parseInt(parts[2]) + Integer.parseInt(parts[3])) % 2 == 1) {
+            resultCoinLabel3.setText("Your Coin: " + parts[4]);
+            cardLayout.show(mainPanel, "resultHL");
         }
     }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                new TCPIPClient().setVisible(true);
-            }
+        SwingUtilities.invokeLater(() -> {
+            new TCPIPClient().setVisible(true);
         });
     }
 }
@@ -243,9 +246,9 @@ class BackgroundPanel extends JPanel {
         try {
             image = ImageIO.read(new File(imagePath));
         } catch (IOException ex) {
-            // ex.printStackTrace();
+            ex.printStackTrace();
         }
-        setLayout(null); // Absolute layout to position components based on coordinates
+        setLayout(null);
     }
 
     @Override
